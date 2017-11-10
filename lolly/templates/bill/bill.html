@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+	{% include "links.html" %}
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+  <script src="/static/js/jquery.min.js"></script>
+  <script src="/static/js/bootstrap.min.js"></script>
+</head>
+<style>
+
+.text-line {
+		/*background-color: transparent;*/
+		/*color: #eeeeee;*/
+		outline: none;
+		outline-style: none;
+		border-top: none;
+		border-left: none;
+		border-right: none;
+		border-bottom: solid #333333 1px;
+		padding: 3px 10px;
+		text-align: center;
+}
+</style>
+<body>
+
+<div class="container">
+  <h2>Lollypop</h2>
+  <div class="table-responsive">
+  <table class="table">
+    <thead>
+			<tr>
+				<th><button type="button" onClick="paybill();" class="btn btn-primary">Pay Bill</button></th>
+				<th></th>
+				<th></th>
+				<th></th>
+				<th></th>
+				<th></th>
+				<th></th>
+			</tr>
+      <tr>
+        <th>Code</th>
+        <th>Name</th>
+				<th>Qty</th>
+        <th>Rate</th>
+        <th>Discount</th>
+				<th>Amount</th>
+				<th>Remove</th>
+      </tr>
+    </thead>
+    <tbody id="itemlist">
+
+    </tbody>
+		<tfoot>
+	    <tr>
+				<th><input class="text-line" type="text" onchange="addlist();" id="product_code" /></th>
+				<th></th>
+				<th></th>
+				<th></th>
+	      <th>Total</th>
+	      <th id="total_amount"></th>
+	    </tr>
+  	</tfoot>
+  </table>
+	</div>
+	<div class='row'>
+		<div class="col-sm-7">
+				Customer Number  :&nbsp;&nbsp;<input type="text" class="text-line" onchange="find_number();" id="Customer_code" />&nbsp;&nbsp;<img data-toggle="tooltip" id="cus_msg" data-placement="right" title="details" data-content="" height="4%" width="4%" src="/static/images/question.png"/>
+		</div>
+		<div class="col-sm-5" >
+				Any Adjustments  :&nbsp;&nbsp;<input type="text" class="text-line" onchange="find_number();" id="adjust" />
+		</div>
+	</div>
+</div>
+
+</body>
+<script>
+$(document).ready(function(){
+    $('[data-toggle="tooltip"]').tooltip();
+});
+
+$(document).ready(function(){
+	$('#product_code').focus();
+});
+
+function find_number() {
+	cus_code = $("#Customer_code").val();
+	if (cus_code.trim().length > 0)
+	{
+		$.ajax({
+			url: "/customer_detail",
+			method: "POST",
+			data : {
+				csrfmiddlewaretoken: csrf_token,
+				c_code : cus_code
+			},
+			success:function(response){
+				if (response[0])
+				{
+					$("#cus_msg").attr("data-original-title","Old Customer");
+					$("#cus_msg").attr("data-content",response[0].fields["status"]);
+				}
+				else {
+					$("#cus_msg").attr("data-original-title","New Customer");
+				}
+				$('[data-toggle="popover"]').popover();
+			},
+			error:function (xhr, textStatus, thrownError){
+		      alert("xhr status: " + xhr.statusText);
+		  }
+ 	})
+}
+}
+
+function addlist() {
+		var code_prod = $("#product_code").val().trim();
+	if ($("#product_code").val().trim().length > 0 && $("#row_"+code_prod).length < 1)
+	{
+		$.ajax({
+	    url: "/product_detail",
+	    method: "POST",
+	    data : {
+	      csrfmiddlewaretoken: csrf_token,
+	      code : $("#product_code").val()
+	    },
+	    success:function(response){
+				if(response[0]){
+					data = response[0].fields
+					if($("#row"+data['item_code']).length > 0){
+						alert("Item Already Added...!");
+					}
+					else{
+								pro_html = "<tr class = 'itemrow' id='row_"+data['item_code']+"'><td>"+data['item_code']+"</td><td>"+data['item_name']+"</td><td><input type='number' value='1' onchange='pricecalc(this);' id='qty_"+data['item_code']+"' /></td><td id='rate"+data['item_code']+"'>"+data['price']+"</td><td id='discount"+data['item_code']+"' >"+data['discount']+"%</td><td class='qty_price' id='price"+data['item_code']+"'>"+(data['price']-(data['price']*data['discount'])/100)+"</td><td><button type='button' id='"+data['item_code']+"' onClick='rmlist(this);' class='btn btn-primary'> Remove </button></td>";
+						$("#itemlist").append(pro_html)
+						total_amount();
+						$('#product_code').val('');
+						$('#product_code').focus();
+
+					}
+				}
+				else{
+					alert("Item Not Found");
+				}
+	  },
+	  error:function (xhr, textStatus, thrownError){
+	      alert("xhr status: " + xhr.statusText);
+	  }
+	  });
+	}
+	else{
+		alert("Item Already Added...!");
+	}
+}
+function pricecalc(get_code) {
+	prod_code = $(get_code).attr('id').replace("qty_","").trim()
+	rate = parseFloat($("#rate"+prod_code).text())
+	discount = parseFloat($("#discount"+prod_code).text().replace("%",""))
+	qty = parseFloat($("#qty_"+prod_code).val())
+	if (discount > 0){
+		$("#price"+prod_code).text(rate*qty - (((rate*qty)*discount)/100))
+	}
+	else{
+		$("#price"+prod_code).text(rate*qty)
+	}
+	total_amount();
+}
+
+function total_amount() {
+	total = 0;
+	$('.qty_price').each(function(){
+		total = total + parseFloat($(this).text())
+	});
+	$("#total_amount").text(total)
+
+}
+function rmlist(rmlist) {
+	prod_code = $(rmlist).attr('id').trim()
+	mval = $("#price"+prod_code).text()
+	tot = $("#total_amount").text()
+	$("#total_amount").text(tot-mval)
+	$("#row_"+prod_code).remove()
+}
+
+function paybill() {
+		prod_list = [];
+	$('.itemrow').each(function() {
+			prod_code = $(this).children();
+			id = $(this).attr('id').split("row_")[1]
+			obj = {
+				"code":$(prod_code[0]).text(),
+				"name":$(prod_code[1]).text(),
+				"qty":$("#qty_"+id).val(),
+				"rate":$(prod_code[3]).text(),
+				"discount":$(prod_code[4]).text(),
+				"amount":$(prod_code[5]).text(),
+			};
+			prod_list.push(obj);
+	})
+	console.log(prod_list)
+}
+</script>
+</html>

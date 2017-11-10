@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+{% verbatim %}
+<body>
+  <script>
+var app = angular.module("myShoppingList", []);
+app.config(['$httpProvider', function($httpProvider) {
+    $httpProvider.defaults.xsrfCookieName = 'csrftoken';
+    $httpProvider.defaults.xsrfHeaderName = 'X-CSRFToken';
+}]);
+app.controller("myCtrl", function($scope, $http, $document) {
+  $scope.products = [];
+  $scope.prod_code = [];
+
+    $scope.addItem = function () {
+        $scope.errortext = "";
+        if (!$scope.addMe) {return;}
+
+
+        if ($scope.prod_code.indexOf($scope.addMe) == -1) {
+          $http({
+              url: "/product_detail",
+              method: 'POST',
+              data: { 'code': $scope.addMe}
+          }).then(function successCallback(response) {
+                $scope.products.push(response.data[0].fields);
+                $scope.prod_code.push(response.data[0].fields.item_code);
+              }, function errorCallback(response) {
+                  console.log("fail")
+              });
+        } else {
+          console.log(angular.element(document.getElementById("q_001")).val());
+            $scope.errortext = "The item is already in your shopping list.";
+        }
+        console.log($scope.products)
+        console.log($scope.prod_code)
+    }
+
+    $scope.removeItem = function (x) {
+        $scope.errortext = "";
+        $scope.products.splice(x, 1);
+        $scope.prod_code.splice(x, 1);
+    }
+});
+</script>
+
+<div ng-app="myShoppingList" ng-cloak ng-controller="myCtrl" class="w3-card-2 w3-margin" style="max-width:400px;">
+  <header class="w3-container w3-light-grey w3-padding-16">
+    <h3>My Shopping List</h3>
+  </header>
+  <table ng-repeat="x in products">
+    <tr class="w3-padding-16">
+      <td class="w3-padding-16">{{x.item_code}}</td>
+      <td class="w3-padding-16">{{x.price}}</td>
+      <td class="w3-padding-16">{{x.discount}}%</td>
+      <td class="w3-padding-16"><input id=q_{{x.item_code}} ng-model="quantity" ng-init="quantity = 1" ></td>
+      <td id=p_{{x.item_code}}></td>
+      <td><span ng-click="removeItem($index)" style="cursor:pointer;" class="w3-right w3-margin-right">×</span></td></tr>
+  </table>
+  <!-- <ul class="w3-ul">
+    <li ng-repeat="x in products" class="w3-padding-16">{{x.item_code}}<span ng-click="removeItem($index)" style="cursor:pointer;" class="w3-right w3-margin-right">×</span></li>
+  </ul> -->
+  <div class="w3-container w3-light-grey w3-padding-16">
+    <div class="w3-row w3-margin-top">
+      <div class="w3-col s10">
+        <input placeholder="Add shopping items here" ng-model="addMe" class="w3-input w3-border w3-padding">
+      </div>
+      <div class="w3-col s2">
+        <button ng-click="addItem()" class="w3-btn w3-padding w3-green">Add</button>
+      </div>
+    </div>
+    <p class="w3-text-red">{{errortext}}</p>
+  </div>
+</div>
+</body>
+{% endverbatim %}
+</html>
