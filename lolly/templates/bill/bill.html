@@ -71,6 +71,14 @@
 				Any Adjustments  :&nbsp;&nbsp;<input type="text" class="text-line" onchange="find_number();" id="adjust" />
 		</div>
 	</div>
+	<br />
+	<br />
+	<div class='row'>
+		<div class="col-sm-7"></div>
+		<div class="col-sm-5">
+			Total Bill Amount  :&nbsp;&nbsp;<input type="text" class="text-line" id="total_amount" />
+		</div>
+	</div>
 </div>
 
 </body>
@@ -126,11 +134,12 @@ function addlist() {
 	    success:function(response){
 				if(response[0]){
 					data = response[0].fields
+					console.log(data);
 					if($("#row"+data['item_code']).length > 0){
 						alert("Item Already Added...!");
 					}
 					else{
-								pro_html = "<tr class = 'itemrow' id='row_"+data['item_code']+"'><td>"+data['item_code']+"</td><td>"+data['item_name']+"</td><td><input type='number' value='1' onchange='pricecalc(this);' id='qty_"+data['item_code']+"' /></td><td id='rate"+data['item_code']+"'>"+data['price']+"</td><td id='discount"+data['item_code']+"' >"+data['discount']+"%</td><td class='qty_price' id='price"+data['item_code']+"'>"+(data['price']-(data['price']*data['discount'])/100)+"</td><td><button type='button' id='"+data['item_code']+"' onClick='rmlist(this);' class='btn btn-primary'> Remove </button></td>";
+								pro_html = "<tr class = 'itemrow' id='row_"+data['item_code']+"'><td>"+data['item_code']+"</td><td>"+data['item_name']+"</td><td><input type='number' value='1' onchange='pricecalc(this);' id='qty_"+data['item_code']+"' /></td><td id='rate"+data['item_code']+"'>"+data['price']+"</td><td data="+data['discount']+" id='discount"+data['item_code']+"' >"+data['discount_percent']+"%</td><td class='qty_price' id='price"+data['item_code']+"'>"+(data['price']-(data['price']*data['discount_percent'])/100)+"</td><td><button type='button' id='"+data['item_code']+"' onClick='rmlist(this);' class='btn btn-primary'> Remove </button></td>";
 						$("#itemlist").append(pro_html)
 						total_amount();
 						$('#product_code').val('');
@@ -166,6 +175,7 @@ function pricecalc(get_code) {
 }
 
 function total_amount() {
+
 	total = 0;
 	$('.qty_price').each(function(){
 		total = total + parseFloat($(this).text())
@@ -192,10 +202,29 @@ function paybill() {
 				"qty":$("#qty_"+id).val(),
 				"rate":$(prod_code[3]).text(),
 				"discount":$(prod_code[4]).text(),
+				"discount_id":$(prod_code[4]).attr("data"),
 				"amount":$(prod_code[5]).text(),
+				"customer":$("#Customer_code").val(),
 			};
 			prod_list.push(obj);
 	})
+
+	$.ajax({
+		url: "/billAdd",
+		method: "POST",
+		//contentType: "application/json",
+		//dataType: "json",
+		data : {
+			csrfmiddlewaretoken: csrf_token,
+			bill_list : JSON.stringify(prod_list)
+		},
+		success:function(response){
+			console.log(response)
+		},
+		error:function (xhr, textStatus, thrownError){
+	      alert("xhr status: " + xhr.statusText);
+	  }
+	});
 	console.log(prod_list)
 }
 </script>
