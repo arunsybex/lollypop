@@ -18,7 +18,7 @@ class Customer(models.Model):
       db_table = "customer"
 
     def __str__(self):
-        return self.phone_number
+        return str(self.phone_number)
 
 class Discount(models.Model):
     discount_name = models.CharField(max_length=15, blank=True, unique=True)
@@ -46,12 +46,13 @@ class Item(models.Model):
       db_table = "item"
 
     def __str__(self):
-        return self.item_code
+        return str(self.item_code)
 
 class Billing(models.Model):
     item = models.ForeignKey(Item)
     customer = models.ForeignKey(Customer)
     quantity = models.IntegerField(blank=True, null=True)
+    bill_id = models.IntegerField(blank=True, null=True)
     price = models.FloatField(blank=True, null=True)
     bill_discount = models.ForeignKey(Discount)
     billed_by = models.CharField(max_length=128,blank=True, null=True)
@@ -62,5 +63,5 @@ class Billing(models.Model):
     class Meta:
         db_table = "billing"
 
-    def __str__(self):
-        return self.id
+    # def __str__(self):
+    #     return self.id
